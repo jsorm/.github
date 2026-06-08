@@ -124,19 +124,18 @@ jsorm migrate:generate  # Diff models → reviewed migration file
 
 | Section | Topics |
 |---|---|
-| [Getting Started](https://github.com/jsorm/docs/getting-started/installation.md) | Install, quick start, first model, first query |
-| [Runtime](https://github.com/jsorm/docs/runtime/node-runtime.md) | Node, Bun, Edge, runtime profiles, workers |
-| [Schema](https://github.com/jsorm/docs/schema/define-model.md) | Models, field types, relations, indexes, naming |
-| [Migrations](https://github.com/jsorm/docs/migrations/migration-overview.md) | Generate, migrate, snapshots, diffing |
-| [Adapters](https://github.com/jsorm/docs/adapters/pg.md) | PG, MySQL, SQLite, fetch, capabilities |
-| [CLI](https://github.com/jsorm/docs/cli/cli-overview.md) | Init, deploy, db:check, migrate commands |
-| [Deployment](https://github.com/jsorm/docs/deployment/overview.md) | Cloud, Docker, environment, CI/CD |
-| [Concepts](https://github.com/jsorm/docs/concepts/architecture.md) | Runtime architecture, relations, transactions, errors |
-| [Advanced](https://github.com/jsorm/docs/advanced/custom-adapters.md) | Custom adapters, custom queries, multi-tenancy, testing |
-| [Examples](https://github.com/jsorm/docs/examples/blog-platform.md) | Blog platform, e-commerce, multi-tenant patterns |
-| [Internal](https://github.com/jsorm/docs/internal/architecture.md) | Architecture, engine protocol, Rust worker |
+| [Getting Started](https://github.com/jsorm/docs/blob/main/getting-started/installation.md) | Install, quick start, first model, first query |
+| [Runtime](https://github.com/jsorm/docs/blob/main/runtime/node-runtime.md) | Node, Bun, Edge, runtime profiles, workers |
+| [Schema](https://github.com/jsorm/docs/blob/main/schema/define-model.md) | Models, field types, relations, indexes, naming |
+| [Migrations](https://github.com/jsorm/docs/blob/main/migrations/migration-overview.md) | Generate, migrate, snapshots, diffing |
+| [Adapters](https://github.com/jsorm/docs/blob/main/adapters/pg.md) | PG, MySQL, SQLite, fetch, capabilities |
+| [CLI](https://github.com/jsorm/docs/blob/main/cli/cli-overview.md) | Init, deploy, db:check, migrate commands |
+| [Deployment](https://github.com/jsorm/docs/blob/main/deployment/overview.md) | Cloud, Docker, environment, CI/CD |
+| [Concepts](https://github.com/jsorm/docs/blob/main/concepts/architecture.md) | Runtime architecture, relations, transactions, errors |
+| [Advanced](https://github.com/jsorm/docs/blob/main/advanced/custom-adapters.md) | Custom adapters, custom queries, multi-tenancy, testing |
+| [Examples](https://github.com/jsorm/docs/blob/main/examples/) | Blog platform, e-commerce, multi-tenant patterns |
 
-Full tree: [docs/SUMMARY.md](https://github.com/jsorm/docs/SUMMARY.md)
+Full tree: [docs/SUMMARY.md](https://github.com/jsorm/docs/blob/main/SUMMARY.md)
 
 ---
 
