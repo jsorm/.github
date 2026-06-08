@@ -108,6 +108,14 @@ Add the CLI to your `package.json` scripts so you can run `pnpm jsorm`:
   }
 }
 ```
+After execute init
+```bash
+pnpm jsorm init
+```
+or
+```bash
+pnpm jsorm init --yes --adapter postgres
+```
 
 ---
 
