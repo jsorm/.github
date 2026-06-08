@@ -108,7 +108,7 @@ Add the CLI to your `package.json` scripts so you can run `pnpm jsorm`:
   }
 }
 ```
-After execute init
+After, execute init
 ```bash
 pnpm jsorm init
 ```
