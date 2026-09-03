@@ -1,6 +1,7 @@
 <p align="center">
   <h1 align="center">JSORM</h1>
-  <p align="center"><strong>JSON-first TypeScript ORM</strong> — schema-driven, deterministic AST compilation, multi-runtime.</p>
+  <p align="center"><strong>A modern, fully-typed, edge-compatible TypeScript ORM, JSON-first.</strong></p>
+  <p align="center"> schema-driven, deterministic AST compilation, multi-runtime.</p>
 </p>
 
 <p align="center">
@@ -11,151 +12,276 @@
 
 ---
 
-Define models once. Get full type inference — no decorators, no code generation.
+Define models once. Run in any environment. No `any`, no heavy runtime.
 
-```ts
-import { createJsorm, defineModel, t } from "@jsorm/core";
-
-const User = defineModel("users", {
-  id: t.number().primary(),
-  name: t.string(),
-  email: t.string().optional(),
-  active: t.boolean().default(true),
-});
-
-const db = await createJsorm().init();
-
-const users = await db.get(User, {
-  select: { name: true, email: true },
-  where: { active: { eq: true } },
-});
-// users: Array<{ name: string; email?: string }>  ← fully inferred
+```text
+Defined model → AST → Provider → Database → Typed result
 ```
 
 ---
 
-### Why JSORM
+## Bootstrap
 
-| | |
-|---|---|
-| **JSON-first queries** | Reads and writes described with plain objects, not builder chains |
-| **Full type inference** | `InferModel`, `InferInput`, `InferRow` — all derived from `defineModel` |
-| **Deterministic AST** | Every query compiles through a versioned, inspectable AST contract |
-| **Multi-runtime** | Node (Rust engine), Bun (`Bun.SQL`), Edge (`@jsorm/fetch`) |
-| **Multi-database** | PostgreSQL, MySQL, SQLite — switch with `db.use("name")` |
-| **Optional migrations** | Connect to existing databases immediately, opt into migrations later |
+```bash
+# Interactive setup (wizard)
+pnpm dlx @jsorm/cli configure
+```
+## Install packages manually
+```bash
+pnpm add @jsorm/client @jsorm/core
+pnpm add -D @jsorm/cli
+```
 
+## Generate types and runtime
+```bash
+pnpm jsorm gen
+```
 ---
 
-### Packages
+## Defining a model
 
-| Package | Purpose |
-|---|---|
-| `@jsorm/core` | Models, queries, config, migration primitives |
-| `@jsorm/node` | CLI (`jsorm init`, `jsorm deploy`) + Node wrapper |
-| `@jsorm/runtime` | Runtime-safe imports for edge/fetch-only code |
-| `@jsorm/fetch` | HTTP transport for edge runtimes |
-| `@jsorm/pg` | PostgreSQL adapter |
-| `@jsorm/mysql` | MySQL adapter |
-| `@jsorm/sqlite` | SQLite adapter |
+```typescript
+import { defineModel, t, r } from "@jsorm/core";
 
-Core has zero database driver dependencies. Install only what you use.
-
----
-
-### Quick Install
-
-#### Bootstrap
-
-```bash
-pnpm dlx @jsorm/node init
-```
-
-`--yes` skips prompts. `--adapter` picks postgres, mysql, or sqlite. A `--no-migrations` flag is also available. Non-interactive bootstrap generates a project in one command:
-
-```bash
-pnpm dlx @jsorm/node init --yes --adapter postgres
-```
-
-#### Install directly
-
-```bash
-# PostgreSQL
-pnpm add @jsorm/core @jsorm/pg pg
-```
-```bash
-# MySQL
-pnpm add @jsorm/core @jsorm/mysql mysql2
-```
-```bash
-# SQLite
-pnpm add @jsorm/core @jsorm/sqlite better-sqlite3
-```
-```bash
-# Bun + SQLite
-bun add @jsorm/core @jsorm/sqlite
-```
-
-Add the CLI to your `package.json` scripts so you can run `pnpm jsorm`:
-
-```json
-{
-  "scripts": {
-    "jsorm": "jsorm"
+export const User = defineModel("users", {
+  db: "main",
+  fields: {
+    id:      t.uuid().primary().autoCreate(),
+    name:    t.string(100),
+    email:   t.string(255).unique(),
+    active:  t.boolean().default(true),
+    createdAt: t.dateTime().autoCreate(),
+    updatedAt: t.dateTime().autoUpdate(),
   },
-  "devDependencies": {
-    "@jsorm/node": "latest"
-  }
-}
+  relations: {
+    posts: r.hasMany("post"),
+    role: r.belongsTo("role"),
+    roles: r.manyToMany("role", {
+      through: "user_roles",
+      extra: { role: t.string(50) },
+    }),
+  },
+});
 ```
-After, execute init
-```bash
-pnpm jsorm init
+
+**Available types:** `t.uuid()`, `t.string(n)`, `t.boolean()`, `t.integer()`, `t.decimal(p, s)`, `t.text()`, `t.dateTime()`, `t.json()`, `t.enum(values)`.
+
+**Modifiers:** `primary()`, `autoCreate()`, `autoUpdate()`, `default(val)`, `unique()`, `nullable()`, `hidden()`.
+
+---
+
+## Using the API
+
+```typescript
+import { jsorm } from "./models/jsorm.server.js";
 ```
-or
-```bash
-pnpm jsorm init --yes --adapter postgres
+
+### Reading
+
+```typescript
+// First record
+const { data: user } = await jsorm.users.first({
+  select: { name: true, email: true },
+  where: { email: "juan@test.com" },
+});
+
+// List with filters and select
+const { data: users } = await jsorm.users.get({
+  select: { id: true, name: true, roles: { name: true } },
+  where: { active: true },
+  orderBy: { createdAt: "desc" },
+});
+// ← users: { id: string; name: string; roles: { name: string }[] }[]
+
+// Offset-based pagination
+const { data: page, meta } = await jsorm.users.get({
+  select: { id: true, name: true },
+  pagination: { page: 1, perPage: 10 },
+});
+// ← meta: { page, perPage, total, lastPage, hasTruncated? }
+
+// Cursor-based pagination
+const { data: cursor, meta: cursorMeta } = await jsorm.users.cursor({
+  select: { id: true, name: true },
+  orderBy: { id: "asc" },
+  limit: 20,
+});
+// ← cursorMeta.cursor.hasNext, cursorMeta.cursor.next, cursorMeta.cursor.previous
+
+// Count / Exists
+const { data: total } = await jsorm.users.count({ where: { active: true } });
+const { data: exists } = await jsorm.users.exists({ where: { email: "juan@test.com" } });
+```
+
+**Select with alias:**
+
+```typescript
+await jsorm.users.get({ select: { name: { as: "Nombre" } } });
+```
+
+### Creating
+
+```typescript
+// Single
+const { data: user } = await jsorm.users.create({ name: "Juan", email: "juan@test.com" });
+
+// Bulk
+const { data: users } = await jsorm.users.createMany([{ name: "Ana" }, { name: "Carlos" }]);
+```
+
+### Updating
+
+```typescript
+// Single
+const { data: affected } = await jsorm.users.update({
+  where: { id: user.id },
+  data: { name: "Juan Updated" },
+});
+// ← affected: number of rows affected
+
+// Bulk
+const { data: affected } = await jsorm.users.updateMany([{ id: "1", name: "A" }, { id: "2", name: "B" }]);
+```
+
+### Deleting
+
+```typescript
+// Single — where required
+await jsorm.users.delete({ where: { id: user.id } });
+
+// Bulk — where required; throws if no where clause is provided, to prevent accidental mass deletes
+await jsorm.users.deleteMany({ where: { active: false } });
+```
+
+### Many-to-Many attach / detach / toggle
+
+```typescript
+await jsorm.users.attach(userId, "roles", [roleId1, roleId2]);
+await jsorm.users.detach(userId, "roles", [roleId2]);
+await jsorm.users.toggle(userId, "roles", [roleId3]);
+```
+
+### Raw SQL escape hatch
+
+```typescript
+const { data: result } = await jsorm.raw({ sql: "SELECT 1" });
+```
+
+### Compile without executing (debug)
+
+```typescript
+const { sql, params } = jsorm.compile(queryAST);
+// sql: "SELECT * FROM users WHERE active = ?"
+// params: [true]
 ```
 
 ---
 
-### CLI
+## Multi-database
 
-```bash
-jsorm init                  # Bootstrap project
-jsorm deploy                # Production-safe migration deploy
-jsorm db:check              # Verify connectivity
-jsorm migrate               # Run pending migrations
-jsorm migrate:generate      # Diff models → reviewed migration file
+Models assigned to a non-main database are accessed via a namespace:
+
+```typescript
+import { jsorm } from "./models/jsorm.db.js";
+
+// Main database — direct access
+const { data: users } = await jsorm.users.get();
+
+// Non-main database — namespaced access
+const { data: sessions } = await jsorm.cache.sessions.get();
+const { data: analytics } = await jsorm.analytics.event.get();
 ```
 
 ---
 
-### Runtime Support
+## CLI commands
 
-| Runtime | Database | Verified |
+| Command | Description |
+|---|---|
+| `pnpm jsorm configure` | Interactive wizard |
+| `pnpm jsorm gen` | Generates types + runtime |
+| `pnpm jsorm watch` | Automatically regenerates when models change |
+| `pnpm jsorm gen --dry-run` | Preview without writing files |
+
+### `configure` flags
+
+| Flag | Values |
+|---|---|
+| `--config` | `full`, `add`, `edit`, `reconfigure` |
+| `--access` | `server`, `client` |
+| `--provider` | `sqlite-node`, `postgres-node`, `indexeddb` |
+| `--naming-fields` | `camelCase`, `snake_case` |
+| `--usermodel` | `yes`, `no` |
+| `--install` | `yes`, `no` |
+| `--db-mode` | `file`, `memory` |
+| `--db-path` | Database path |
+| `--models` | Custom path for models |
+
+---
+
+## Packages
+
+| Package | What it does | Runtime |
 |---|---|---|
-| Node.js 22+ | PostgreSQL, MySQL, SQLite | Ubuntu + Windows CI, 337 tests |
-| Bun | SQLite (via `Bun.SQL`) | Bun smoke CI |
-| Edge | Any (via `@jsorm/fetch`) | Unit-tested transport |
+| `@jsorm/core` | Types, `defineModel()`, `t.*`, `r.*`, `defineConfig()`, `env()` | Edge, Browser, Node |
+| `@jsorm/client` | `createJsorm()`, Proxy, TableMethods, ProviderManager | Edge, Browser, Node |
+| `@jsorm/cli` | CLI binary (Rust engine): `configure`, `gen`, `watch` | Node 22+ |
+| `@jsorm/provider-sqlite-node` | SQLite provider (better-sqlite3) | Node 22+ |
+| `@jsorm/provider-pg-node` | PostgreSQL provider (pg) | Node 22+ |
+| `@jsorm/provider-indexeddb` | IndexedDB provider (browser) | Browser |
+
+All packages are ESM-only (`.mjs` + `.d.ts`).
 
 ---
+
+## Architecture
+
+```
+Your code → Client (Proxy → TableMethods → AST) → Provider (Compiler → SQL) → Database
+```
+
+- **Core** defines models and types. It never knows about SQL or Node.
+- **Client** builds the AST that describes queries. Edge-compatible (no `fs`, `path`, `process`).
+- **Provider** turns the AST into SQL and executes it. Each provider is self-contained (driver + compiler + connection manager + schema sync).
+- **CLI** generates the types and runtime code. Rust engine using tree-sitter. Not part of the production bundle.
+
+**Full flow:**
+
+```
+defineModel() → CLI (tree-sitter parser) → .jsorm/types.ts + runtime files
+                                        ↓
+jsorm.users.get({ select, where }) → Proxy → TableMethods → AST builder → QueryAST
+                                        ↓
+                            ProviderManager (routes by db name)
+                                        ↓
+                            Provider.execute(QueryAST) → compiler → SQL
+                                        ↓
+                            driver.query(sql, params) → { data: T[] }
+```
+
+---
+
 ## Documentation
 
-| Section | Topics |
+| Section | Content |
 |---|---|
-| [Getting Started](https://github.com/jsorm/docs/blob/main/getting-started/installation.md) | Install, quick start, first model, first query |
-| [Runtime](https://github.com/jsorm/docs/blob/main/runtime/node-runtime.md) | Node, Bun, Edge, runtime profiles, workers |
-| [Schema](https://github.com/jsorm/docs/blob/main/schema/define-model.md) | Models, field types, relations, indexes, naming |
-| [Migrations](https://github.com/jsorm/docs/blob/main/migrations/migration-overview.md) | Generate, migrate, snapshots, diffing |
-| [Adapters](https://github.com/jsorm/docs/blob/main/adapters/pg.md) | PG, MySQL, SQLite, fetch, capabilities |
-| [CLI](https://github.com/jsorm/docs/blob/main/cli/cli-overview.md) | Init, deploy, db:check, migrate commands |
-| [Deployment](https://github.com/jsorm/docs/blob/main/deployment/overview.md) | Cloud, Docker, environment, CI/CD |
-| [Concepts](https://github.com/jsorm/docs/blob/main/concepts/architecture.md) | Runtime architecture, relations, transactions, errors |
-| [Advanced](https://github.com/jsorm/docs/blob/main/advanced/custom-adapters.md) | Custom adapters, custom queries, multi-tenancy, testing |
-| [Examples](https://github.com/jsorm/docs/blob/main/examples/) | Blog platform, e-commerce, multi-tenant patterns |
-
-Full tree: [docs/SUMMARY.md](https://github.com/jsorm/docs/blob/main/SUMMARY.md)
+| [Quick start](docs/en/README.md) | Full step-by-step guide |
+| [Full API](docs/en/api/API.md) | Every method documented |
+| [API structure](docs/en/api/API_STRUCTURE.md) | Rules and patterns of the API |
+| [Architecture](docs/en/architecture/ARCHITECTURE_AND_RULES.md) | Layers, rules, design |
+| [Design decisions](docs/en/architecture/DESIGN.md) | Why it was built this way |
+| [Principles](docs/en/API_PRINCIPLES.md) | Design philosophy (11 immutable rules) |
+| [Conventions](docs/en/conventions/CONVENTIONS.md) | Naming: models, tables, relations |
+| [CLI](docs/en/cli/COMMANDS.md) | Commands and flags |
+| [Configure](docs/en/cli/CONFIGURE.md) | Configuration wizard |
+| [Packages](docs/en/packages/) | Details of each package |
+| [RULES.md](RULES.md) | SOLID, DRY, strict rules |
 
 ---
-<p align="center">MIT · v0.2.0 · Production-ready beta</p>
+
+## License
+
+**MPL-2.0** — you can use JSORM in proprietary software with no obligation to open-source your own code, but you must publish any changes you make to the ORM's `.ts` files.
+
+[Full license text](LICENSE) — [Security policy](security.md)
+
