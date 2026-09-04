@@ -226,6 +226,7 @@ const { data: analytics } = await jsorm.analytics.event.get();
 | `@jsorm/core` | Types, `defineModel()`, `t.*`, `r.*`, `defineConfig()`, `env()` | Edge, Browser, Node |
 | `@jsorm/client` | `createJsorm()`, Proxy, TableMethods, ProviderManager | Edge, Browser, Node |
 | `@jsorm/cli` | CLI binary (Rust engine): `configure`, `gen`, `watch` | Node 22+ |
+| `@jsorm/compiler` | AST to SQL Compiler | Node 22+ |
 | `@jsorm/provider-sqlite-node` | SQLite provider (better-sqlite3) | Node 22+ |
 | `@jsorm/provider-pg-node` | PostgreSQL provider (pg) | Node 22+ |
 | `@jsorm/provider-indexeddb` | IndexedDB provider (browser) | Browser |
