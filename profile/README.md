@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/jsorm/monorepo/actions"><img src="https://github.com/jsorm/monorepo/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/org/jsorm"><img src="https://img.shields.io/npm/v/@jsorm/cli" alt="npm"></a>
-  <a href="https://github.com/jsorm/monorepo/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jsorm/jsorm-monorepo" alt="license"></a>
+  <a href="https://github.com/jsorm/jsorm-monorepo/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jsorm/jsorm-monorepo" alt="license"></a>
 </p>
 
 ---
